@@ -1,8 +1,25 @@
+/****************************************************************************/
+//    copyright 2015- 2016  Chris Rizzitello <sithlord48@gmail.com>         //
+//                                                                          //
+//    This file is part of FF7tk                                            //
+//                                                                          //
+//    FF7tk is free software: you can redistribute it and/or modify         //
+//    it under the terms of the GNU General Public License as published by  //
+//    the Free Software Foundation, either version 3 of the License, or     //
+//    (at your option) any later version.                                   //
+//                                                                          //
+//    FF7tk is distributed in the hope that it will be useful,              //
+//    but WITHOUT ANY WARRANTY; without even the implied warranty of        //
+//   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the          //
+//    GNU General Public License for more details.                          //
+/****************************************************************************/
 #include "CharManager.h"
 
-CharManager::CharManager(QWidget *parent) :
+CharManager::CharManager(qreal Scale,QWidget *parent) :
     QWidget(parent)
 {
+	charData = new FF7Char;
+	scale=Scale;
     initDisplay();
     connectAll();
 }
@@ -10,13 +27,12 @@ CharManager::CharManager(QWidget *parent) :
 void CharManager::initDisplay(void)
 {
     load= true;
-    charData= new FF7Char;
     for(int i=0;i<3;i++)
     {
         comboParty[i] = new QComboBox();
         for (int j=0;j<11;j++)
         {
-            comboParty[i]->addItem(charData->icon(j),charData->defaultName(j));
+			comboParty[i]->addItem(charData->icon(j),charData->defaultName(j));
         }
         comboParty[i]->addItem("0x0B");
         comboParty[i]->addItem(tr("-Empty-"));
@@ -31,24 +47,33 @@ void CharManager::initDisplay(void)
     QGroupBox *partyBox =new QGroupBox(tr("Party Members"));
     partyBox->setLayout(partyLayout);
 
-    tabWidget =new QTabWidget;
-    for(int i=0;i<9;i++)
-    {
-        charEditor[i]= new CharEditor();
-        tabWidget->addTab(charEditor[i],QString("%1").arg(QString::number(i+1)));
-    }
+	QVBoxLayout *charBox = new QVBoxLayout;
+	for(int i=0;i<9;i++)
+	{
+		QPushButton *button = new QPushButton;
+		button->setIcon(charData->icon(i));
+		button->setIconSize(QSize(32+scale,32*scale));
+		button->setMaximumWidth(32*scale);
+		charBox->addWidget(button);
+	}
+	charEditor= new CharEditor(scale);
+
+	QHBoxLayout *lowerBox = new QHBoxLayout;
+	lowerBox->addLayout(charBox);
+	lowerBox->addWidget(charEditor);
 
     QVBoxLayout * mainLayout = new QVBoxLayout;
     mainLayout->addWidget(partyBox);
-    mainLayout->addWidget(tabWidget);
+	mainLayout->addLayout(lowerBox);
     this->setLayout(mainLayout);
     load=false;
 }
 void CharManager::connectAll(void)
 {
-    connect(comboParty[0],SIGNAL(currentIndexChanged(int)),this,SLOT(party1Changed(int)));
-    connect(comboParty[1],SIGNAL(currentIndexChanged(int)),this,SLOT(party2Changed(int)));
-    connect(comboParty[2],SIGNAL(currentIndexChanged(int)),this,SLOT(party3Changed(int)));
+	connect(comboParty[0],SIGNAL(currentIndexChanged(int)),this,SLOT(party1Changed(int)));
+	connect(comboParty[1],SIGNAL(currentIndexChanged(int)),this,SLOT(party2Changed(int)));
+	connect(comboParty[2],SIGNAL(currentIndexChanged(int)),this,SLOT(party3Changed(int)));
+
 }
 void CharManager::disconnectAll(void)
 {

@@ -1,5 +1,5 @@
 /****************************************************************************/
-//    copyright 2013  Chris Rizzitello <sithlord48@gmail.com>               //
+//    copyright 2013 -2016  Chris Rizzitello <sithlord48@gmail.com>         //
 //                                                                          //
 //    This file is part of FF7tk                                            //
 //                                                                          //
@@ -15,8 +15,9 @@
 /****************************************************************************/
 #include "LocationViewer.h"
 
-LocationViewer::LocationViewer(QWidget *parent) :  QWidget(parent)
+LocationViewer::LocationViewer(qreal Scale,QWidget *parent) :  QWidget(parent)
 {
+	scale=Scale;
 	region="";
 	transBasePath="";
 	autoUpdate=false;
@@ -46,10 +47,11 @@ void LocationViewer::resizeEvent(QResizeEvent *ev)
 
 void LocationViewer::init_display(void)
 {
+
 	lblLocationPreview = new QLabel;
-	lblLocationPreview->setScaledContents(true);
-	lblLocationPreview->setMinimumSize(320,240);
-	lblLocationPreview->setBaseSize(640,480);
+    //lblLocationPreview->setScaledContents(true);
+	lblLocationPreview->setMinimumSize(320*scale,240*scale);
+	lblLocationPreview->setBaseSize(640*scale,480*scale);
 	lblLocationPreview->setSizePolicy(QSizePolicy::Expanding,QSizePolicy::Expanding);
 	QTableWidgetItem *newItem;
 
@@ -65,18 +67,18 @@ void LocationViewer::init_display(void)
 
 	newItem = new QTableWidgetItem(tr("Filename"),0);
 	locationTable->setHorizontalHeaderItem(0,newItem);
-	locationTable->setColumnWidth(0,fontMetrics().width(QChar('W'))*8);
+    locationTable->setColumnWidth(0,fontMetrics().width(QChar('W'))*6);
 	newItem = new QTableWidgetItem(tr("Location Name"),0);
 	locationTable->setHorizontalHeaderItem(1,newItem);
 	locationTable->setColumnWidth(1,fontMetrics().width(QChar('W'))*15);
 	newItem = new QTableWidgetItem(tr("LocID"),0);
-	locationTable->setColumnWidth(2,fontMetrics().width(QChar('W'))*6);
+    locationTable->setColumnWidth(2,fontMetrics().width(QChar('W'))*4);
 	locationTable->setHorizontalHeaderItem(2,newItem);
 
 	for (int i=0;i<locationTable->rowCount();i++)
 	{
 		//set the tooltip to the needed file
-		QString tooltip(QString("<html><head/><body><p><img src=\":/locations/%1_%2\"/></p></body></html>").arg(Locations->mapID(i),Locations->locationID(i)));
+		QString tooltip(QString("<html><head/><body><p><img src=\":/locations/%1_%2\" width=\"%3\" height\"%4\" /></p></body></html>").arg(Locations->mapID(i),Locations->locationID(i),QString::number(320*scale),QString::number(480*scale)));
 
 		newItem = new QTableWidgetItem(Locations->fileName(i),0);
 		newItem->setFlags(newItem->flags()&=~Qt::ItemIsEditable);
@@ -95,15 +97,17 @@ void LocationViewer::init_display(void)
 		newItem->setFlags(newItem->flags()&=~Qt::ItemIsEditable);
 		newItem->setTextAlignment(Qt::AlignHCenter);
 		locationTable->setItem(i,2,newItem);
-		locationTable->setRowHeight(i,font().pointSizeF()*2+2);
+		locationTable->setRowHeight(i,(fontMetrics().height()+2));
 	}
 	locationTable->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
+	locationTable->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 	locationTable->adjustSize();
-	locationTable->setFixedWidth(locationTable->columnWidth(0)+locationTable->columnWidth(1)+locationTable->columnWidth(2)+locationTable->contentsMargins().left()+locationTable->contentsMargins().right()+locationTable->verticalScrollBar()->widthMM()-fontMetrics().width("W")+4);
+	locationTable->setFixedWidth(locationTable->columnWidth(0)+locationTable->columnWidth(1)+locationTable->columnWidth(2)+locationTable->verticalScrollBar()->widthMM()+fontMetrics().width(QChar('W')));
 	locationTable->setCurrentCell(-1,-1);
 	locationTable->setSizePolicy(QSizePolicy::Fixed,QSizePolicy::Expanding);
 
 	btnSearchOptions = new QToolButton;
+	btnSearchOptions->setLayoutDirection(Qt::RightToLeft);
 	btnSearchOptions->setIcon(QIcon::fromTheme(QString("edit-clear"),QPixmap(":/common/edit-clear")));
 	btnSearchOptions->setPopupMode(QToolButton::MenuButtonPopup);
 
@@ -119,8 +123,10 @@ void LocationViewer::init_display(void)
 	actionCaseSensitive = new QAction(tr("Case Sensitive"),btnSearchOptions);
 	actionCaseSensitive->setCheckable(true);
 
+	QString menuStyle = QString("QCheckbox::indicator { width: %1px; height: %2px;}").arg(QString::number(16*scale),QString::number(16*scale));
+
 	QMenu * newMenu=new QMenu;
-	newMenu->setStyleSheet(this->styleSheet());
+	newMenu->setStyleSheet(menuStyle);
 	newMenu->addAction(actionNameSearch);
 	newMenu->addAction(actionItemSearch);
 	newMenu->addSeparator();
@@ -128,10 +134,10 @@ void LocationViewer::init_display(void)
 	newMenu->addAction(actionCaseSensitive);
 
 	btnSearchOptions->setMenu(newMenu);
-	btnSearchOptions->setFixedWidth(36);
+	btnSearchOptions->setFixedWidth(36*scale);
 
 	lineTableFilter = new QLineEdit;
-    lineTableFilter->setFixedWidth( locationTable->width() - btnSearchOptions->width());
+	lineTableFilter->setFixedWidth( locationTable->width() - btnSearchOptions->width());
 
 	lineLocationName = new QLineEdit;
 	lineLocationName->setPlaceholderText(tr("Location Name"));
@@ -176,8 +182,8 @@ void LocationViewer::init_display(void)
 	sbD->setAlignment(Qt::AlignCenter);
 
 	chkAutoUpdate = new QCheckBox;
-    chkAutoUpdate->setText(tr("Save &Location Changes"));
-    chkAutoUpdate->setFixedWidth(locationTable->width());
+	chkAutoUpdate->setText(tr("Save &Location Changes"));
+	chkAutoUpdate->setFixedWidth(locationTable->width());
 	//connect now and forget it
 	connect(chkAutoUpdate,SIGNAL(clicked(bool)),this,SLOT(chkAutoUpdateChanged(bool)));
 
@@ -216,10 +222,10 @@ void LocationViewer::init_display(void)
 	PreviewLayout->addWidget(lblLocationPreview);
 
 	QHBoxLayout *FilterLayout = new QHBoxLayout;
-    FilterLayout->setContentsMargins(0,0,0,0);
-    FilterLayout->setSpacing(0);
-	FilterLayout->addWidget(btnSearchOptions);
+	FilterLayout->setContentsMargins(0,0,0,0);
+	FilterLayout->setSpacing(0);
 	FilterLayout->addWidget(lineTableFilter);
+	FilterLayout->addWidget(btnSearchOptions);
 
 	QVBoxLayout *LeftSideLayout = new QVBoxLayout;
 	LeftSideLayout->setSpacing(0);
@@ -333,7 +339,7 @@ void LocationViewer::setLocation(int mapId,int locId)
 	if(fileName.isEmpty()){lblLocationPreview->setPixmap(QString(""));}
 	else
 	{
-		lblLocationPreview->setPixmap(QPixmap(QString("://locations/%1_%2").arg(QString::number(mapId),QString::number(locId))));
+        lblLocationPreview->setPixmap(QPixmap(QString("://locations/%1_%2").arg(QString::number(mapId),QString::number(locId))).scaled(lblLocationPreview->size(),Qt::KeepAspectRatio,Qt::SmoothTransformation));
 		QString oldStr = Locations->locationString(fileName);
 		QString newStr = translate(oldStr);
 		if(oldStr !=newStr && autoUpdate)
@@ -560,17 +566,17 @@ void LocationViewer::setAdvancedMode(bool advancedMode)
 bool LocationViewer::advancedMode(void){return _advancedMode;}
 void LocationViewer::setFilterString(QString filter,filterMode mode)
 {
-    switch(mode)
-    {
-        case NAME: actionNameSearch->setChecked(true); break;
-        case ITEM: actionItemSearch->setChecked(true); break;
-    }
-    lineTableFilter->setText(filter);
-    setLocationChangesSaved(false);
-    for(int i=0;i<locationTable->rowCount();i++)
-    {
-        if(locationTable->isRowHidden(i)){}
-        else{locationTable->selectRow(i); return;}
-    }
+	switch(mode)
+	{
+		case NAME: actionNameSearch->setChecked(true); break;
+		case ITEM: actionItemSearch->setChecked(true); break;
+	}
+	lineTableFilter->setText(filter);
+	setLocationChangesSaved(false);
+	for(int i=0;i<locationTable->rowCount();i++)
+	{
+		if(locationTable->isRowHidden(i)){}
+		else{locationTable->selectRow(i); return;}
+	}
 
 }
